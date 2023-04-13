@@ -10,6 +10,10 @@ from copy import copy
 from hurst import compute_Hc
 from scipy.stats import entropy as scientropy
 
+##
+## wavelet transform
+##
+
 def getCoefficients(mother_wavelet):
     # getCoefficients manually retrieves the scaling filter coefficients 
     # for the chosen mother wavelet. These coefficients can be found at:
@@ -219,6 +223,10 @@ def idwt2(cA,cD,match_length,lpf_R,hpf_R):
 
     return reconstructed
 
+##
+## decomposiiton
+##
+
 def multires(signal, level, lpf_D, hpf_D):
     # multires (Multiple-resolution analysis) repeatedly decomposes the approximate coefficients
     # Because the approximate coefficients represent the low frequency part of the signal,
@@ -317,7 +325,7 @@ def getScaledDecompositionLevels(signals,max_level=10):
         (f,S)=scipy.signal.periodogram(sig.astype(np.float64),fs,scaling='density',return_onesided=True)
         if (len(S)==len(sums)):
             sums += np.array(S)
-        else: print('a recording had different N')
+        else: print(f'a recording had different N: {len(S)} vs {len(sums)}')
     
     S = sums/len(signals) # average S over signals
     
@@ -465,6 +473,10 @@ def scaledresInverse(lengthsArray,levels,coeffs,lpf_R,hpf_R):
 
     return reconstructed
 
+##
+## noise estimation
+##
+
 def normaliseH(H):
     return H
 
@@ -600,19 +612,24 @@ def getStdThresholds(signal,max_windows=5,fs=96000,overlap=True,globalMedian=0,g
 
     return thres_array, E_indices, E_array
 
+##
+## denoising
+##
+
 def threshold_localised(coeffs,threshold_method='hard'):
-    # Hurst scaled
+    # std scaled
     # localised calculates a unique threshold for each frequency band, and for each window
     # then values are thresholded according to the (first) window they fall into
+    max_windows = 10
 
     # get overall median:
     globalMedian = np.median([abs(item) for sublist in coeffs for item in sublist])
     globalStd = np.std([abs(item) for sublist in coeffs for item in sublist])
-    print(f'global std: {globalStd}')
+    # print(f'global std: {globalStd}')
 
     for frequency_band in coeffs:
         noise_levels = []
-        thresholds,indices,std_vals = getStdThresholds(frequency_band,max_windows=5,globalMedian=globalMedian,globalStd=globalStd)
+        thresholds,indices,std_vals = getStdThresholds(frequency_band,max_windows=max_windows,globalMedian=globalMedian,globalStd=globalStd)
         # print(f'thresholds are: {thresholds}')
 
         for k in range(len(frequency_band)):
@@ -757,12 +774,12 @@ def denoise(signal,level,mother_wavelet='haar',technique='multi_res',threshold_s
     elif technique=='scaled_res':
         if not levels:
             levels,level_depths = getScaledDecompositionLevels(signal,max_level=level)
-        print(levels)
+        # print(levels)
         
         coeffs,lengthsArray = scaledres(signal,levels,lpf_D,hpf_D)
 
-        for coeff in coeffs:
-            print(f'{len(coeff) }',end=' \n')
+        # for coeff in coeffs:
+        #     print(f'{len(coeff) }',end=' \n')
 
         thresholded_coeffs = threshold(coeffs, threshold_method, threshold_selection, thres, intensity)
         denoised_signal = scaledresInverse(lengthsArray,levels,thresholded_coeffs,lpf_R,hpf_R)
@@ -773,6 +790,10 @@ def denoise(signal,level,mother_wavelet='haar',technique='multi_res',threshold_s
         wavfile.write('test_denoised.wav',fs,denoised_signal.astype(np.int16))
 
     return denoised_signal
+
+##
+## eval
+##
 
 def SNR(enhanced,noise):
     S = np.sum(np.square(np.abs(enhanced)))/len(enhanced)
@@ -804,9 +825,18 @@ def SuccessRatio(noise_pre, noise_post):
     SR = log(np.var(noise_pre)/np.var(noise_post), 10)
     return SR
 
+def PreservationRatio(noise_region_pre,noise_region,signal_region_pre,signal_region):
+    PR_1 = np.mean(np.square(noise_region_pre-noise_region))
+    PR_2 = np.mean(np.square(signal_region_pre-signal_region))
+    return log(PR_1/PR_2,10)
+
 def generateSignal(length_in_seconds,frequency,sampling_rate,amplitude=1):
     time=np.linspace(0,length_in_seconds,int(sampling_rate*length_in_seconds),endpoint=False)
     return amplitude*np.sin(2*np.pi * frequency * time)
+
+##
+## other
+##
 
 def getMaxLevel(signal):
     return floor(log2(len(signal)))
