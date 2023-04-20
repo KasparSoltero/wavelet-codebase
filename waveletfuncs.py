@@ -602,7 +602,6 @@ def getStdThresholds(signal,max_windows=5,fs=96000,overlap=True,globalMedian=0,g
 
         intensity = min_intensity + (1 - normaliseS(E,globalStd))*(max_intensity-min_intensity)
         intensity = max(min(intensity, max_intensity), min_intensity)
-        # print(intensity)
         abs_window_samples = np.abs(window_samples)
         # thres = np.median(abs_window_samples)+intensity*np.std(abs_window_samples)
         # thres = np.median(abs_window_samples)*intensity
@@ -616,11 +615,11 @@ def getStdThresholds(signal,max_windows=5,fs=96000,overlap=True,globalMedian=0,g
 ## denoising
 ##
 
-def threshold_localised(coeffs,threshold_method='hard'):
+def threshold_localised(coeffs,threshold_method='hard',windows=5):
     # std scaled
     # localised calculates a unique threshold for each frequency band, and for each window
     # then values are thresholded according to the (first) window they fall into
-    max_windows = 10
+    max_windows = windows
 
     # get overall median:
     globalMedian = np.median([abs(item) for sublist in coeffs for item in sublist])
@@ -643,7 +642,7 @@ def threshold_localised(coeffs,threshold_method='hard'):
     
     return coeffs
 
-def threshold(coeffs, threshold_method='hard', threshold_selection='universal',thres=0,intensity=1):
+def threshold(coeffs, threshold_method='hard', threshold_selection='universal',thres=0,intensity=1,windows=5):
     # threshold takes a signal decomposed using multi-resolution analysis, and 
     # thresholds every coefficient using 'hard' or 'soft' thresholding.
     # There are a variety of ways to select a threshold value, with the method specified by 'threshold_selection'.
@@ -734,7 +733,7 @@ def threshold(coeffs, threshold_method='hard', threshold_selection='universal',t
         thresholds = np.array(noise_levels)
     
     elif (threshold_selection=='std_scaled'):
-        coeffs = threshold_localised(coeffs,threshold_method=threshold_method)
+        coeffs = threshold_localised(coeffs,threshold_method=threshold_method,windows=windows)
         return coeffs
 
     # For each of the decomposition level arrays (cA1, cA2, cA3, cD3 etc),
@@ -751,7 +750,7 @@ def threshold(coeffs, threshold_method='hard', threshold_selection='universal',t
     
     return coeffs
 
-def denoise(signal,level,mother_wavelet='haar',technique='multi_res',threshold_selection='universal',threshold_method='hard', thres=0, intensity=1, storefile=False,fs=96000,levels=''):
+def denoise(signal,level,mother_wavelet='haar',technique='multi_res',threshold_selection='universal',threshold_method='hard', thres=0, intensity=1, storefile=False,fs=96000,levels='',windows=5):
     # denoise takes a signal through the entire wavelet denoising process,
     # by decomposing it with multi-resolution analysis, thresholding it, and reconstructing it.
     # The process diagram is as follows:
@@ -781,7 +780,7 @@ def denoise(signal,level,mother_wavelet='haar',technique='multi_res',threshold_s
         # for coeff in coeffs:
         #     print(f'{len(coeff) }',end=' \n')
 
-        thresholded_coeffs = threshold(coeffs, threshold_method, threshold_selection, thres, intensity)
+        thresholded_coeffs = threshold(coeffs, threshold_method, threshold_selection, thres, intensity, windows=windows)
         denoised_signal = scaledresInverse(lengthsArray,levels,thresholded_coeffs,lpf_R,hpf_R)
 
     if (storefile):
@@ -794,6 +793,15 @@ def denoise(signal,level,mother_wavelet='haar',technique='multi_res',threshold_s
 ##
 ## eval
 ##
+
+def SDI(denoised,clean):
+    fs = 1 #this doesn't affect the ratio
+    (f,clean_PSD)=scipy.signal.periodogram(clean.astype(np.float64),fs,scaling='density',return_onesided=True)
+    (f,denoised_PSD)=scipy.signal.periodogram(denoised.astype(np.float64),fs,scaling='density',return_onesided=True)
+
+    ratio = np.sum(np.square(clean_PSD-denoised_PSD))/np.sum(np.square(clean_PSD))
+
+    return 10*log(ratio,10)
 
 def SNR(enhanced,noise):
     S = np.sum(np.square(np.abs(enhanced)))/len(enhanced)

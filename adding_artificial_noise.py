@@ -2,10 +2,12 @@ import os
 from scipy.io import wavfile
 import numpy as np
 import scipy.signal
+import random
+from waveletfuncs import denoise, SDI
+from waveletfuncs import *
+from graphing import *
 
-directory = '/Users/kaspar/Downloads/Sounds/Cat F. catus 2s'
-directoryToSave = '/Users/kaspar/Downloads/Sounds/temp cat'
-
+## get noise
 noise_path = '/Users/kaspar/Downloads/Sounds/Noise 2s'
 noise_clips = []
 
@@ -14,28 +16,27 @@ for i, filename in enumerate(sorted(os.listdir(noise_path))):
         pathname = os.path.join(noise_path,filename)
         [fs, signal] = wavfile.read(pathname)
         signal = signal[:fs*2]
-        noise_clips.append(signal)
+        noise_clips.append(signal.astype(object))
 
+## add noise to clean signals randomly
 clean_signals_path = '/Users/kaspar/Downloads/Sounds/Manually Cleaned'
 clean_clips = []
+dirty_clips = []
 
 for i, filename in enumerate(sorted(os.listdir(clean_signals_path))):
     if not filename=='.DS_Store':
         pathname = os.path.join(clean_signals_path,filename)
         [fs, signal] = wavfile.read(pathname)
         signal = signal[:fs*2]
-        clean_clips.append(signal)
+        clean_clips.append(signal.astype(object))
+        
+        random_noise = random.choice(noise_clips)
+        dirty_clips.append(np.add(signal.astype(object),random_noise.astype(object)))
+        # print(f'{filename} {len(signal)}')
 
-PSD_Originals = []
-for original in clean_clips:
-    (f,S)=scipy.signal.periodogram(original.astype(np.float64),fs,scaling='density',return_onesided=True)
-    print(len(S))
-    PSD_Originals.append(S)
-        # newname = str(count)+'.wav'
-        # if count<10:
-        #     newname='0'+newname
-    
-        # newpath = os.path.join(directoryToSave,newname)
-        # wavfile.write(newpath, fs, signal)
-
-        # count+=1
+for i,sig in enumerate(dirty_clips):
+    name = str(i)+'.wav'
+    if i<10:
+        name = '0'+name
+    name = '/Users/kaspar/Downloads/sounds/Artificial Noise/'+name
+    wavfile.write(name,96000,sig.astype(np.int16))
