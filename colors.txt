@@ -1,0 +1,5 @@
+'magenta'
+#1ff0f0 - cyan
+#1ff037 - green
+#fc5017 - orange
+#0836bf - dark blue

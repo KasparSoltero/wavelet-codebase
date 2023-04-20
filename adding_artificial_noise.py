@@ -34,6 +34,7 @@ for i, filename in enumerate(sorted(os.listdir(clean_signals_path))):
         dirty_clips.append(np.add(signal.astype(object),random_noise.astype(object)))
         # print(f'{filename} {len(signal)}')
 
+## save clips which have artificial noise added
 for i,sig in enumerate(dirty_clips):
     name = str(i)+'.wav'
     if i<10:

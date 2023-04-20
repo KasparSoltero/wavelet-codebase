@@ -20,7 +20,7 @@ def getCoefficients(mother_wavelet):
     # http://wavelets.pybytes.com/wavelet/db1/
 
     match(mother_wavelet):
-        case 'haar':
+        case 'haar'|'db1'|'daubechies 1':
             coefficients = np.array([1/sqrt(2),1/sqrt(2)])
         case 'daubechies 2'|'db2':
             coefficients = np.array([0.48296291314469025,0.836516303737469,0.22414386804185735,-0.12940952255092145])
