@@ -26,5 +26,10 @@ for i,d in enumerate(d_Is):
 
 ax.legend(bbox_to_anchor=(0.99, 0.99), loc='upper right', borderaxespad=0., title='Intensity range')
 
+# double the width
+box = ax.get_position()
+ax.set_position([box.x0, box.y0, box.width * 2, box.height])
+
+
 plt.subplots_adjust(left=0.15,bottom=0.15)
 plt.show()

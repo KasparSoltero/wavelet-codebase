@@ -376,8 +376,6 @@ def getScaledDecompositionLevels(signals,max_level=10):
     # scaled levels will look like:     [3,1,0,0,2,1,0,0]
 
     print(f'min bandwidth: {min_bandwidth}')
-    print(f'decomp levels:')
-    print(decomp_levels)
 
     reflected_decomp_levels = [0]*len(decompose_to_max_level)
     scaled_decomp_levels = [0]
@@ -472,6 +470,46 @@ def scaledresInverse(lengthsArray,levels,coeffs,lpf_R,hpf_R):
     reconstructed = coeffs[0]
 
     return reconstructed
+
+def fullres(signal,level,lpf_D,hpf_D):
+    # An array is used to store the coefficients at each resolution
+    # For the first decomposition, the original signal is used.
+    # Each successive decomposition uses the coefficients of the previous level
+    cA = signal
+    coeffs = [cA]
+    match_lengths = [len(cA)]
+
+    for i in range(level):
+        new_coeffs = []
+
+        for j in range(len(coeffs)):
+            [cA,cD] = dwt(coeffs[j],lpf_D,hpf_D)
+            new_coeffs.append(cA)
+            new_coeffs.append(cD)
+        
+        coeffs = new_coeffs
+        match_lengths.append(len(cA))
+        # At each level, all coefficients are decomposed into
+        # low and high frequency components using the discrete wavelet transform.
+
+    return coeffs,match_lengths
+
+def fullresInverse(match_lengths,coeffs,lpf_R,hpf_R):
+    
+    #reverse order of match_lengths
+    match_lengths.reverse()
+
+    levels = int(log2(len(coeffs)))
+    for i in range(levels):
+        # print(f'level {i} of {levels},length of coeffs: {len(coeffs)} matching length {match_lengths[i]}')
+        new_coeffs = []
+        for j in range(0,len(coeffs),2):
+            reconstructed = idwt(coeffs[j],coeffs[j+1],match_lengths[i+1] ,lpf_R,hpf_R)
+            new_coeffs.append(reconstructed)
+        coeffs = new_coeffs
+
+    # After all reconstructions, the fully reconstructed signal is returned
+    return coeffs[0]
 
 ##
 ## noise estimation
@@ -575,7 +613,7 @@ def normaliseS(Std,globalStd=250):
     Std = min(1,Std)
     return abs(Std)
 
-def getStdThresholds(signal,max_windows=5,fs=96000,overlap=True,globalMedian=0,globalStd=250):
+def getStdThresholds(signal,max_windows=5,fs=96000,overlap=True,globalMedian=0,globalStd=250,intensity=[0,5]):
     # overlap is 50%
     # pls signal length in seconds is close to a multiple of window length // 2
 
@@ -591,8 +629,8 @@ def getStdThresholds(signal,max_windows=5,fs=96000,overlap=True,globalMedian=0,g
     thres_array = []
     E_indices = []
 
-    max_intensity = 3
-    min_intensity = 0
+    max_intensity = intensity[1]
+    min_intensity = intensity[0]
 
     for i in range(num_window):
         window_samples = signal[int(i*window_length_samples/2) : int((i+2)*window_length_samples/2)]
@@ -615,7 +653,7 @@ def getStdThresholds(signal,max_windows=5,fs=96000,overlap=True,globalMedian=0,g
 ## denoising
 ##
 
-def threshold_localised(coeffs,threshold_method='hard',windows=5):
+def threshold_localised(coeffs,threshold_method='hard',windows=5,intensity=[0,5]):
     # std scaled
     # localised calculates a unique threshold for each frequency band, and for each window
     # then values are thresholded according to the (first) window they fall into
@@ -628,7 +666,7 @@ def threshold_localised(coeffs,threshold_method='hard',windows=5):
 
     for frequency_band in coeffs:
         noise_levels = []
-        thresholds,indices,std_vals = getStdThresholds(frequency_band,max_windows=max_windows,globalMedian=globalMedian,globalStd=globalStd)
+        thresholds,indices,std_vals = getStdThresholds(frequency_band,max_windows=max_windows,globalMedian=globalMedian,globalStd=globalStd,intensity=intensity)
         # print(f'thresholds are: {thresholds}')
 
         for k in range(len(frequency_band)):
@@ -733,7 +771,7 @@ def threshold(coeffs, threshold_method='hard', threshold_selection='universal',t
         thresholds = np.array(noise_levels)
     
     elif (threshold_selection=='std_scaled'):
-        coeffs = threshold_localised(coeffs,threshold_method=threshold_method,windows=windows)
+        coeffs = threshold_localised(coeffs,threshold_method=threshold_method,windows=windows,intensity=intensity)
         return coeffs
 
     # For each of the decomposition level arrays (cA1, cA2, cA3, cD3 etc),
@@ -767,7 +805,7 @@ def denoise(signal,level,mother_wavelet='haar',technique='multi_res',threshold_s
     if technique=='multi_res':
         coeffs = multires(signal,level,lpf_D,hpf_D)
         # plot_histogram(coeffs)
-        thresholded_coeffs = threshold(coeffs, threshold_method, threshold_selection, thres, intensity)
+        thresholded_coeffs = threshold(coeffs, threshold_method, threshold_selection, thres, intensity, windows=windows)
 
         denoised_signal = inverseMultires(signal,thresholded_coeffs,lpf_R,hpf_R)
     elif technique=='scaled_res':
@@ -782,6 +820,10 @@ def denoise(signal,level,mother_wavelet='haar',technique='multi_res',threshold_s
 
         thresholded_coeffs = threshold(coeffs, threshold_method, threshold_selection, thres, intensity, windows=windows)
         denoised_signal = scaledresInverse(lengthsArray,levels,thresholded_coeffs,lpf_R,hpf_R)
+    elif technique=='full_res':
+        coeffs,match_lengths = fullres(signal,level,lpf_D,hpf_D)
+        thresholded_coeffs = threshold(coeffs, threshold_method, threshold_selection, thres, intensity)
+        denoised_signal = fullresInverse(match_lengths,thresholded_coeffs,lpf_R,hpf_R)
 
     if (storefile):
         ## write wav files for listening
@@ -801,7 +843,7 @@ def SDI(denoised,clean):
 
     ratio = np.sum(np.square(clean_PSD-denoised_PSD))/np.sum(np.square(clean_PSD))
 
-    return 10*log(ratio,10)
+    return -10*log(ratio,10)
 
 def SNR(enhanced,noise):
     S = np.sum(np.square(np.abs(enhanced)))/len(enhanced)
