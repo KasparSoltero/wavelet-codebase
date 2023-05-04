@@ -2,8 +2,9 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import matplotlib as mpl
 import numpy as np
-from math import floor
-from waveletfuncs import getScaledDecompositionLevels, getHurstThresholds, getFilters, scaledres, getEntropyThresholds,getStdThresholds, normaliseE, normaliseH,normaliseS
+from math import floor, log2
+from waveletfuncs import getScaledDecompositionLevels, getHurstThresholds, getFilters, getEntropyThresholds,getStdThresholds, normaliseE, normaliseH,normaliseS
+from waveletfuncs import multires,scaledres,fullres
 
 def plot_specgram(data, fs=96000, title='', x_label='', y_label='', fig_size=[5,3],cmap='inferno'):
     fig = plt.figure()
@@ -187,7 +188,7 @@ def scaled_bands_visual(signal,level=5,windows=5,fs=96000,title='',x_label='',y_
     # ax.set_ylabel('Frequency (Hz)')
     plt.subplots_adjust(bottom=0.15, left=0.15)
 
-def noise_grid_visual(signal,method='hurst',level=5,windows=5,fs=96000,title='',x_label='',y_label='',fig_size=[5,3],cmap='inferno',levels=''):
+def noise_grid_visual(signal,method='std',level=5,windows=5,fs=96000,title='',x_label='',y_label='',fig_size=[5,3],cmap='inferno',levels=''):
     # grid type visual with colors by hurst values
 
     fig, (ax, ax2) = plt.subplots(nrows=1, ncols=2, figsize=fig_size, gridspec_kw={'width_ratios': [25,1]})    
@@ -269,3 +270,111 @@ def noise_grid_visual(signal,method='hurst',level=5,windows=5,fs=96000,title='',
                 cax=ax2, orientation='vertical', label='Standard Deviation of Ỹ [dB]')
     
     plt.subplots_adjust(bottom=0.15, left=0.15, right=0.82)
+
+def frequency_decomposition_visual(signal,fs=96000,title='',x_label='',y_label='',fig_size=[5,6],cmap='Greys',levels=''):
+    # 3 spectrograms stacked on top of each other in first column,
+    # 3 plots of frequency decomposition in second column
+
+    fig, ax = plt.subplots(nrows=3, ncols=2, figsize=fig_size, gridspec_kw={'width_ratios': [2,3]})    
+    fig.set_size_inches(fig_size[0], fig_size[1])
+    #ax.set_title(title)
+    #ax.set_xlabel(x_label)
+    #ax.set_ylabel(y_label)
+    
+    vmax = 40
+    vmin = -30
+    pxx,  freq, t, cax = ax[0,1].specgram(signal, Fs=fs,cmap=cmap,vmin=vmin,vmax=vmax)
+    pxx,  freq, t, cax = ax[1,1].specgram(signal, Fs=fs,cmap=cmap,vmin=vmin,vmax=vmax)
+    pxx,  freq, t, cax = ax[2,1].specgram(signal, Fs=fs,cmap=cmap,vmin=vmin,vmax=vmax)
+
+    ax[0,1].set_xlim([0,2])
+    ax[1,1].set_xlim([0,2])
+    ax[2,1].set_xlim([0,2])
+
+    #set x ticks to [0,0.5,1,1.5,2]
+    ax[0,1].set_xticks([0,0.5,1,1.5,2])
+    ax[1,1].set_xticks([0,0.5,1,1.5,2])
+    ax[2,1].set_xticks([0,0.5,1,1.5,2])
+
+    #set y ticks on first column to be only integers
+    ax[0,0].yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+    ax[1,0].yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+    ax[2,0].yaxis.set_major_locator(plt.MaxNLocator(integer=True))
+
+    scale = 1e3                     # KHz
+    ticks = mpl.ticker.FuncFormatter(lambda x, pos: '{0:g}'.format(x/scale))
+    ax[0,1].yaxis.set_major_formatter(ticks)
+    ax[1,1].yaxis.set_major_formatter(ticks)
+    ax[2,1].yaxis.set_major_formatter(ticks)
+
+    def add_levels(ax,coeffs,reverse=True):
+        print([int(log2(int(len(signal)/len(coeffs[i]) + 0.5))) for i in range(len(coeffs))])
+        print([len(coeffs[i]) for i in range(len(coeffs))])
+        level_depths = [int(log2(int(len(signal)/len(coeffs[i]) + 0.5))) for i in range(len(coeffs))]
+        if not reverse:
+            level_depths.reverse()
+        
+        ax.plot(level_depths,range(len(coeffs)),color='black',marker='x',linestyle='-')
+        # reverse direction of y axis
+        ax.invert_yaxis()
+        
+        return level_depths
+
+    def add_resolution_bands(ax,level_depths,max_level):
+        min_bandwidth = int((fs/2)/(2**max_level))
+        print(f'min bw {min_bandwidth}')
+        linestyle='-'
+        edgecolor='magenta'
+
+        lw = 1.5 #line width
+
+        frequency_counter = 96000/2
+        freq_to_draw = 0
+        i=0
+        print(f'level depths {level_depths}')
+        for val in level_depths:
+            if frequency_counter>= freq_to_draw:
+                bw = min_bandwidth*2**(max_level-val)
+                # ax.add_patch(Rectangle((0,freq_to_draw), 2, bw, edgecolor=edgecolor, linestyle=linestyle, fill=False, lw=lw))
+                ax.plot([2,0],[48000-freq_to_draw,48000-freq_to_draw],color=edgecolor,linestyle=linestyle,lw=lw)
+                freq_to_draw += bw
+                i+=1
+            frequency_counter += min_bandwidth
+
+    # single-level DWT
+    [lpf_R,lpf_D,hpf_R,hpf_D] = getFilters('haar')
+    max_level = 4
+
+    # set y axis of spectrogram to show in kHz using matplotlib.pyplot.specgram
+
+    ax[0,0].set_xlim([0,max_level+1])
+    ax[1,0].set_xlim([0,max_level+1])
+    ax[2,0].set_xlim([0,max_level+1])
+
+    coeffs = multires(signal,max_level,lpf_D,hpf_D)
+    level_depths = add_levels(ax[0,0],coeffs)
+    add_resolution_bands(ax[0,1],level_depths,max_level)
+
+    coeffs,ml = fullres(signal,max_level,lpf_D,hpf_D)
+    level_depths = add_levels(ax[1,0],coeffs)
+    add_resolution_bands(ax[1,1],level_depths,max_level)
+
+    levels,dl = getScaledDecompositionLevels(signal,max_level=max_level)
+    coeffs,la = scaledres(signal,levels,lpf_D,hpf_D)
+    # plot decomposition level by coefficients, cross marks with line between:
+    level_depths = add_levels(ax[2,0],coeffs,reverse=False)
+    add_resolution_bands(ax[2,1],level_depths,max_level)
+
+    #overall title left column and right column
+    fig.text(0.2, 0.94, 'Decomposition Method', fontsize=11, ha='center', va='center')
+    fig.text(0.71, 0.94, 'Approximate Frequency Resolution', fontsize=11, ha='center', va='center')
+
+    # ax[0,0].set_title('Multi-level DWT')
+    # ax[1,0].set_title('Full DWT')
+    # ax[2,0].set_title('Spectrally scaled DWT')
+    fig.subplots_adjust(hspace=0.295,wspace=0.35,left=0.112,right=0.95,top=0.9,bottom=0.083)
+
+    ax[1,0].set_ylabel('Decomposition band j')
+    ax[1,1].set_ylabel('Frequency [kHz]')
+    ax[2,1].set_xlabel('Time [s]')
+    ax[2,0].set_xlabel('Decomposition depth')

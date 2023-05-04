@@ -325,7 +325,7 @@ def getScaledDecompositionLevels(signals,max_level=10):
         (f,S)=scipy.signal.periodogram(sig.astype(np.float64),fs,scaling='density',return_onesided=True)
         if (len(S)==len(sums)):
             sums += np.array(S)
-        else: print(f'a recording had different N: {len(S)} vs {len(sums)}')
+        # else: print(f'a recording had different N: {len(S)} vs {len(sums)}')
     
     S = sums/len(signals) # average S over signals
     
@@ -375,7 +375,7 @@ def getScaledDecompositionLevels(signals,max_level=10):
     # decomp levels looks like:         [3, 3, 4, 4, 2, 2, 2, 2, 3, 3, 4, 4, 2, 2, 2, 2]
     # scaled levels will look like:     [3,1,0,0,2,1,0,0]
 
-    print(f'min bandwidth: {min_bandwidth}')
+    # print(f'min bandwidth: {min_bandwidth}')
 
     reflected_decomp_levels = [0]*len(decompose_to_max_level)
     scaled_decomp_levels = [0]
@@ -690,7 +690,7 @@ def threshold(coeffs, threshold_method='hard', threshold_selection='universal',t
     if (threshold_selection=='constant'):
         # If a constant threshold is used, this applies to every decomposition level.
         thresholds = [thres]*len(coeffs)
-        print(thresholds)
+        # print(thresholds)
     
     elif (threshold_selection=='universal'):
         # The most common method is referred to as 'universal' thresholding.

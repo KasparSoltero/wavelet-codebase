@@ -25,7 +25,7 @@ fig1, [ax1,ax2]=plt.subplots(2,1,sharex=False)
 fig1.set_size_inches(5,6)
 
 #create space between the two subplots
-fig1.subplots_adjust(top=0.95,right=0.95,left=0.15,bottom=0.09,hspace=0.3)
+fig1.subplots_adjust(top=0.95,right=0.95,left=0.15,bottom=0.09,hspace=0.25)
 
 (Pxx, freqs, line) = ax1.psd(amplitude,Fs=fs,return_line=True,color='#000000')
 x,y=line[0].get_data()
@@ -35,15 +35,15 @@ print(unaliased_amplitude)
 
 allWavelets = ['db1','db2','db3','db4','db5','db6','db7','db8','db9','db10','db11','db12','db13','db14','db15','db16','db17','db18','db19','db20','sym2','sym3','sym4','sym5','sym6','sym7','sym8','sym9','sym10','sym11','sym12','sym13','sym14','sym15','sym16','sym17','sym18','sym19','sym20','coif1','coif2','coif3','coif4','coif5','meyer']
 allWavelets = ['db1','db2','db3','db4','db5','db6','db7','db8','db9','db10','db11','db12','db13','db14','db15','db16','db17','db18','db19','db20','sym2','sym3','sym4','sym5','sym6','sym7','sym8','sym9','sym10','sym11','sym12','sym13','sym14','sym15','sym16','sym17','sym18','sym19','sym20','coif1','coif2','coif3','coif4','coif5']
-goodWavelets = ['db1','db10','sym20']
+goodWavelets = ['db1','db10','db20']
 wavelets_db = ['db'+str(i) for i in range(1,21)]
 wavelets_sym = ['sym'+str(i) for i in range(2,21)]
 wavelets_coif = ['coif'+str(i) for i in range(1,6)]
 
 alias_vals = ['']*len(allWavelets)
 
-linestyles = ['--',':','--']
-colors = ['magenta','magenta','#1ff037']
+linestyles = ['--',':','-.']
+colors = ['magenta','magenta','magenta']
 gwlcount = 0
 
 for i,mother_wavelet in enumerate(allWavelets):
@@ -64,13 +64,13 @@ for i,mother_wavelet in enumerate(allWavelets):
 
 
 goodWavelets.insert(0,'Original')
-legend = ['Original','Daubechies N=2','Daubechies N=20','Symlets N=40']
+legend = ['Original','Daubechies M=2','Daubechies M=20','Daubechies M=40']
 ax1.legend(legend,loc='upper center',bbox_to_anchor=(0.5,1),frameon=False)
 ax1.set_xlim([0,50])
 ax1.set_xlabel('Frequency (Hz)')
 # turn off the grid
 ax1.grid(False)
-ax1.set_title('a',loc='left',fontweight='bold')
+# ax1.set_title('a',loc='left',fontweight='bold')
 
 # second plot
 for i in range(len(alias_vals)):
@@ -98,10 +98,10 @@ for i in range(len(colors)):
 ax2.axhline(y=0, color='grey', linestyle='--')
 
 ax2.legend(handles=handles,loc='upper right',bbox_to_anchor=(1,1),frameon=False)
-ax2.set_xlabel('Filter Length N')
+ax2.set_xlabel('Filter Length M')
 ax2.set_ylabel('Peak difference at 40 Hz (dB/Hz)')
 ax2.set_xlim([0,42])
 ax2.set_ylim([-20,50])
-ax2.set_title('b',loc='left',fontweight='bold')
+# ax2.set_title('b',loc='left',fontweight='bold')
 
 plt.show()

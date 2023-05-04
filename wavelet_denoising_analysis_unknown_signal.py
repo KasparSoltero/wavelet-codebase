@@ -14,6 +14,10 @@ import os
 import math
 from json.encoder import INFINITY
 
+# Import modules
+import os
+
+# Set paths
 sounds_path = './sounds'
 possum_path = os.path.join(sounds_path,'Possum T. vulpecula 2s')
 cat_path = os.path.join(sounds_path,'Cat F. Catus 2s')
