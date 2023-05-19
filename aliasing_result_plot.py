@@ -64,7 +64,7 @@ for i,mother_wavelet in enumerate(allWavelets):
 
 
 goodWavelets.insert(0,'Original')
-legend = ['Original','Daubechies M=2','Daubechies M=20','Daubechies M=40']
+legend = ['Original','Daubechies $L$=2','Daubechies $L$=20','Daubechies $L$=40']
 ax1.legend(legend,loc='upper center',bbox_to_anchor=(0.5,1),frameon=False)
 ax1.set_xlim([0,50])
 ax1.set_xlabel('Frequency (Hz)')
@@ -98,7 +98,7 @@ for i in range(len(colors)):
 ax2.axhline(y=0, color='grey', linestyle='--')
 
 ax2.legend(handles=handles,loc='upper right',bbox_to_anchor=(1,1),frameon=False)
-ax2.set_xlabel('Filter Length M')
+ax2.set_xlabel('Filter Length $L$')
 ax2.set_ylabel('Peak difference at 40 Hz (dB/Hz)')
 ax2.set_xlim([0,42])
 ax2.set_ylim([-20,50])

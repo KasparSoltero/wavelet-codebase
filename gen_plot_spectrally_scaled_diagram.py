@@ -188,9 +188,9 @@ ax=axs
 fig.set_size_inches(5,3)
 scaled_decomp_levels, decomp_levels = getScaledDecompositionLevels(recording,max_level=level)
 ax.plot(decomp_levels,color='black',linestyle='-',marker='x')
-ax.set_xlabel('Decomposition level j')
+ax.set_xlabel('Decomposition band j')
 ax.set_ylabel('Decomposition depth')
-ax.set_title('PSD Scaled Decomposition Levels')
+ax.set_title('PSD Scaled Decomposition Depths')
 plt.subplots_adjust(left=0.136,bottom=0.162,right=0.867,top=0.924,wspace=0.121)
 
 

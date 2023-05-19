@@ -17,7 +17,7 @@ ax = axs
 
 for data in ['time_d_method']:
 
-    data_out_path = 'wavelet-codebase\wavelet_results_' + data + '.csv'
+    data_out_path = 'wavelet_results_' + data + '.csv'
 
     # open data out for reading
     with open(data_out_path, 'r') as f:
@@ -51,7 +51,7 @@ for data in ['time_d_method']:
 
 #set y labels on left
 ax.set_ylabel('Mean computation time (ms)',fontsize=12)
-ax.set_xlabel('Maximum decomposition level',fontsize=12)
+ax.set_xlabel('Maximum decomposition depth',fontsize=12)
 fig.legend(['Multi-res','Full-res','Scaled-res (possum)','Scaled-res (cat)','Scaled-res (bird)'],loc='upper left',bbox_to_anchor=(0.15,1),frameon=False,ncol=1,fontsize=12)
 # handles = [plt.Line2D([],[],color='#000000',marker='x',label='intensity 3'),plt.Line2D([],[],color='magenta',marker='x',label='intensity 5'),plt.Line2D([],[],color='#1ff037',marker='x',label='intensity 7')]
 # fig.legend(handles=handles,loc='upper center',bbox_to_anchor=(0.5,1),frameon=False,ncol=3,fontsize=14)

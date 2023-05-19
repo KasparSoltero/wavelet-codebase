@@ -8,10 +8,13 @@ from waveletfuncs import *
 from graphing import *
 
 ## add noise to clean signals randomly
-clean_signals_path = '/Users/kaspar/Downloads/Sounds/Manually Cleaned'
-artificial_noise_path = '/Users/kaspar/Downloads/Sounds/Artificial Noise'
+clean_signals_path_bird = './Sounds/bird_2s_manually_cleaned'
+clean_signals_path_possum = './Sounds/possum_2s_manually_cleaned'
+artificial_noise_path = './Sounds/Artificial Noise'
 clean_clips = []
 dirty_clips = []
+
+clean_signals_path = clean_signals_path_bird
 
 for i, filename in enumerate(sorted(os.listdir(clean_signals_path))):
     if not filename=='.DS_Store':
@@ -72,6 +75,10 @@ for windows in range(5,11):
     print(f'{windows}',end=' ')
 
     scaled_levels = scaled_decomp_levels_store_possum[level]
+    
+    scaled_decomp_levels, decomp_levels = getScaledDecompositionLevels(dirty_clips,max_level=level)
+    scaled_levels = scaled_decomp_levels
+
     SDI_vals = []
 
     for i,signal in enumerate(dirty_clips):
